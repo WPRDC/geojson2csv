@@ -1,5 +1,7 @@
 import bigjson
 import os, sys, csv, re
+from shapely.geometry import shape
+
 # For a GeoJSON file that starts like this:
 #{"type":"FeatureCollection",
 # "features":
@@ -39,11 +41,18 @@ def detect_keys(list_of_dicts):
     print(f'Extracted keys: {keys}')
     return keys
 
+def convert_geometry_to_wkt(geometry):
+    """Return the well-known text representation of
+    the geometry from the GeoJSON element."""
+    g_shape = shape(geometry)
+    return g_shape.wkt
+
 def convert_geojson_row_to_dict(row):
     d = dict(row['properties'])
     geometry = row['geometry']
-    assert geometry['type'] == "Point"
-    d['LNG'], d['LAT'] = geometry['coordinates']
+    if geometry['type'] == 'Point':
+        d['LNG'], d['LAT'] = geometry['coordinates']
+    d['wkt'] = convert_geometry_to_wkt(geometry)
     return d
 
 def handle_big_json_file(filepath):
