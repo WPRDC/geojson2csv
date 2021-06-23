@@ -66,14 +66,26 @@ def handle_big_json_file(filepath):
         features = j['features']
         csv_rows = []
         count = 0
-        keys = None
+
+        # Pre-detect keys to avoid ignoring keys that may not be
+        # be in the first batch of features. This significantly increases
+        # the processing time, but something like this is necessary to
+        # handle cases where the very last GeoJSON feature adds a
+        # previously unseen key.
+        keys = set()
+        for feature in features:
+            keys = set(feature['properties'].keys()) | keys
+        keys = list(keys)
+        keys = sorted(list(keys)) # Sort them alphabetically, in the absence of any better idea.
+        # [One other option would be to extract the field names from the schema and send that
+        # list as the third argument to write_to_csv.]
+        print(f'Extracted keys: {keys}')
+
         for feature in features:
             csv_row = convert_geojson_row_to_dict(feature.to_python())
             csv_rows.append(csv_row)
             if len(csv_rows) == 1000:
                 count += len(csv_rows)
-                if keys is None:
-                    keys = detect_keys(csv_rows)
                 write_or_append_to_csv(output_filepath, csv_rows, keys)
                 csv_rows = []
                 print(f"{count} rows have been written.")
