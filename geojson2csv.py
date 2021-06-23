@@ -61,11 +61,12 @@ def handle_big_json_file(filepath):
     else:
         output_filepath = 'output.csv'
 
+    # It SEEMS like closing the file after the key detection step
+    # and then re-opening it makes the processing happen significantly
+    # faster (at least on a computer with low available RAM).
     with open(filepath, 'rb') as f:
         j = bigjson.load(f)
         features = j['features']
-        csv_rows = []
-        count = 0
 
         # Pre-detect keys to avoid ignoring keys that may not be
         # be in the first batch of features. This significantly increases
@@ -81,6 +82,11 @@ def handle_big_json_file(filepath):
         # list as the third argument to write_to_csv.]
         print(f'Extracted keys: {keys}')
 
+    with open(filepath, 'rb') as f:
+        j = bigjson.load(f)
+        features = j['features']
+        csv_rows = []
+        count = 0
         for feature in features:
             csv_row = convert_geojson_row_to_dict(feature.to_python())
             csv_rows.append(csv_row)
